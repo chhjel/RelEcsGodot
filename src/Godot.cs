@@ -1,11 +1,11 @@
-using System.Linq;
 using Godot;
+using System.Linq;
 
 namespace RelEcs
 {
     public class Root
     {
-        public Node Node;
+        public Node? Node;
     }
 
     public interface ISpawnable
@@ -13,7 +13,7 @@ namespace RelEcs
         void Spawn(EntityBuilder entityBuilder);
     }
 
-    public partial class Marshallable<T> : RefCounted where T: class
+    public partial class Marshallable<T> : RefCounted where T : class
     {
         public T Value;
         public Marshallable(T value) => Value = value;
@@ -28,7 +28,7 @@ namespace RelEcs
         
         public static void DespawnAndFree(this World world, Entity entity)
         {
-            if (world.TryGetComponent<Root>(entity, out var root)) root.Node.QueueFree();
+            if (world.TryGetComponent<Root>(entity, out var root)) root!.Node?.QueueFree();
             world.Despawn(entity);
         }
 
@@ -36,8 +36,10 @@ namespace RelEcs
         {
             world.AddComponent(entity, new Root { Node = root });
             root.SetMeta("Entity", new Marshallable<Entity>(entity));
-            
-            var nodes = root.GetChildren().Cast<Node>().Prepend(root).ToList();
+
+            var nodes = root.GetChildren().Cast<Node>()
+                .Where(x => !x.Name.ToString().StartsWith("_"))
+                .Prepend(root).ToList();
 
             foreach (var node in nodes)
             {
