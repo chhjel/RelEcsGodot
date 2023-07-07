@@ -19,6 +19,8 @@ namespace RelEcs
         public Marshallable(T value) => Value = value;
     }
 
+    public interface IRemovedOnDespawn { }
+
     public static class GodotExtensions
     {
         public static EntityBuilder Spawn(this World world, Node root)
@@ -28,6 +30,15 @@ namespace RelEcs
         
         public static void DespawnAndFree(this World world, Entity entity)
         {
+            // Handle IRemovedOnDespawn
+            foreach (var comp in world.GetComponents(entity))
+            {
+                var type = comp.Item2?.GetType();
+                if (type?.IsAssignableTo(typeof(IRemovedOnDespawn)) != true) continue;
+
+                world.RemoveComponent(entity, type);
+            }
+
             if (world.TryGetComponent<Root>(entity, out var root)) root!.Node?.QueueFree();
             world.Despawn(entity);
         }
